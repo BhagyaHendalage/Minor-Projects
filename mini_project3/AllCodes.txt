@@ -1,0 +1,337 @@
+'''
+Author : Bhagya Hendalage
+Date : 27/12/2020
+input = sequence
+output = AT count
+'''
+def AT_content(sequence):
+    #define counters for 'A' and 'T'
+    A=0
+    T=0
+    for base in sequence:
+        if base=='A':
+            A+=1
+        elif base=='T':
+            T+=1
+    print("A base count is:",A)
+    print("T base count is:",T)
+#using custom sequence
+AT_content('ATATATACGCGCG')
+
+'''
+Author : Bhagya Hendalage
+Date : 27/12/2020
+Write methods for sequence for sequence analysis
+method to split multiple FASTA sequences
+method to check the type of a given sequence is DNA, mRNA or amino acid sequence
+method to count AT bases
+'''
+
+#method for count AT bases
+def AT_counts(sequence):
+    AT_count=0
+    #check and select DNA
+    if 'M' not in sequence:
+     for i in sequence:
+         if i=='A' or i=='T':
+             AT_count +=1
+    #if sequence is an amino acid
+    else:
+        AT_count = "Not a DNA sequence"
+    return  AT_count
+
+#method for split fasta file
+def split_fasta_file(filename):
+    #define an empty dictionary
+    dict = {}
+    with open(filename, 'r') as file:
+        header = ''
+        for line in file:
+            if line != '\n':
+                line = line.strip()
+                # identify the headers
+                if line.startswith('>'):
+                    header = line
+                    dict[header] = ''
+                # if it is not a header, it defines as sequence
+                else:
+                    dict[header] += line.strip()
+    print(dict)
+    return (dict)
+
+#method for find type of the molecule
+def type_of_molecule(sequence):
+        if 'M' in sequence:
+            return "Amino acid"
+        elif 'U' in sequence and 'M' not in sequence:
+            return "mRNA"
+        else:
+            return "DNA"
+
+#give an input to a method and output save as a variable
+dic = split_fasta_file("OSDREB_sequences.fasta")
+for key,value in dic.items():
+    print('header : ',key)
+    print('sequence : ',value)
+    print('Type Of the Molecule : ',type_of_molecule(value))
+    print('AT count in the sequence : ',AT_counts(value), '\n')
+
+'''
+Author : Bhagya Hendalage
+Date : 30/12/2020
+Understand the Python Object-oriented programming (OOP) techniques.
+Python methods to analyze DNA sequences
+
+Input: DNA/mRNA/amino acid sequences in FASTA format
+Output: Sequence class,DNAseq subclass,mRNAseq subclass,Proteinseq subclass
+'''
+#create a Sequence class
+class Sequence:
+    gene_ID=''
+    gene_name=''
+    seq_type=''
+    seq_length=0
+    seq_count=0
+    sp_name=''
+    subsp_name=''
+    sequence=''
+#define attributes and methods
+    def __init__(self,gene_name,gene_ID,sp_name,subsp_name,sequence):
+        self.gene_ID=gene_ID
+        self.gene_name=gene_name
+        self.sp_name=sp_name
+        self.subsp_name=subsp_name
+        self.sequence=sequence
+        self.seq_type=Sequence.get_Seq_Type(sequence)
+        self.seq_length=len(sequence)
+        Sequence.seq_count += 1
+
+    @staticmethod
+    def fasta_Split(file_name):
+        """
+        method to split fasta file to dectionary
+        For proteins:{'Gene_name':(['>Gene_name_P' ,'RefSeq_gene_ID','species','subspecies','Uniprot_ID','reviewed_status'],'sequence')}
+        For coding sequences:{'Gene_name:(['>Gene_name','CDS-RefSeq_gene_ID','species','subspecies'],'sequence')}
+
+        Input: fasta file_name
+        Output: dictionary with keys and values
+        """
+        #define an empty dictionary
+        dict = {}
+        with open(file_name, 'r') as sequence:
+            Gene_name = ''
+            seq = ''
+            for line in sequence:
+                if line != '\n':
+                    line = line.strip()
+                    if '>' in line:
+                        #to split from '-'
+                        Gene_name = line.split('-')
+                        #to take the first index value as gene_name
+                        Gene_name = Gene_name[0]
+                        header_parts = line.split('-')
+                        #to take all indeces to value
+                        header_parts = header_parts[0:]
+                        #without seq='', all keys contain first iterated sequence
+                        seq=''
+                    if '>' not in line:
+                        seq = seq + line
+                        dict[Gene_name] = header_parts, seq
+        return(dict)
+
+    @staticmethod
+    def get_Seq_Type(sequence):
+        """
+        A method to check the sequence type from all 3 sequence types: DNA, mRNA, amino acid.
+
+        Input: sequence
+        Output: sequence type ('DNA' or 'mRNA' or 'amino acid')
+        """
+        if 'M' in sequence:
+            return "Amino acid"
+        elif 'U' in sequence and 'M' not in sequence:
+            return "mRNA"
+        else:
+            return "DNA"
+
+    @staticmethod
+    def get_Character_Count(sequence):
+        """
+        method for return all characters in sequence and its count as a dictionary
+        Input: sequence
+        Output: dictionary of character counts
+        """
+        character_count = {}
+
+        for i in sequence:
+            if i in character_count:
+                character_count[i] += 1
+            else:
+                character_count[i] = 1
+
+        # printing result
+        return(character_count)
+#subclass for DNA
+class DNAseq(Sequence):
+    AT_content=0
+    Transcribed_sequence=''
+
+
+    def __init__(self, gene_name, gene_ID,sp_name, subsp_name,sequence):
+        super().__init__(gene_name, gene_ID, sp_name, subsp_name, sequence)
+
+        self.AT_content = self.get_AT_Contents(sequence)
+        self.Transcribed_sequence=self.transcribe_Sequence(sequence)
+
+
+
+    def transcribe_Sequence(self,sequence):
+        '''
+        method for transcribe DNA sequence
+        Input : sequence
+        Output : mRNA
+        '''
+        transcribed_sequence=sequence.replace('T','U')
+        return transcribed_sequence
+
+
+    def get_AT_Contents(self,sequence):
+        '''
+        method for get A,T bases content in sequence as a percentage
+        Input : sequence
+        Output : AT content as percentage
+        '''
+        #store the output as instance variable
+        AT_content = ((sequence.count("A") + sequence.count("T")) / len(sequence)) * 100
+        return AT_content
+
+#subclass for mRNA
+class mRNAseq(Sequence):
+    AT_content=0
+    Amino_acid_codons=''
+    Translated_sequence=''
+
+
+    def __init__(self, gene_name, gene_ID,sp_name, subsp_name,sequence):
+        super().__init__(gene_name, gene_ID, sp_name, subsp_name, sequence)
+
+        self.mRNA_id = gene_ID
+        self.mRNA_name = gene_name
+        self.seq_type = "mRNA"
+        self.seq_len = len(sequence)
+        self.AT_content = self.get_ATcontent(sequence)
+        self.Translated_sequence = self.translate_Sequence(sequence)
+
+
+    def get_ATcontent(self,sequence):
+        '''
+         methode for get AT content in mRNA sequnce
+         input : sequence
+         output : AU content as a percentage
+        '''
+        AT_content = ((sequence.count("A") + sequence.count("U")) / len(sequence)) * 100
+        return AT_content
+
+    def upload_Codons(mRNAseq,CodonfileName):
+        Codon_dict = {}
+        # open codon_table and store as a variable
+        with open('codon_table.txt', 'r') as codon_table:
+            for line in codon_table:
+                # remove header and empty lines
+                if '#' not in line and line != '\n':
+                    (codon, AminoAcid, Letter, FullName) = line.strip().split('\t')
+                    # fill the dictionary using codons and related amino acid name
+                    Codon_dict[codon] = Letter
+        return(Codon_dict)
+
+    def translate_Sequence(self, sequence, CodonfileName="OSDREB_sequences.fasta"):
+        protein = ''
+        Codon_map = self.upload_Codons(CodonfileName)
+        #start when meet 'AUG'
+        start = sequence.find('AUG')
+        if start != -1:
+            while start + 2 < len(sequence):
+                codon = sequence[start:start + 3]
+                #stop when meet stop codons
+                if codon == "UAG" or codon == "UAA" or codon == "UGA":
+                    break;
+                start += 3
+                for i in Codon_map[codon]:
+                    protein += i
+            return(protein)
+
+#subclass for proteins
+class Proteinseq(Sequence):
+    Uniprot_ID=''
+    Reviewed_status=''
+    Hydrophobicity=0
+    def __init__(self, gene_name, gene_ID, sp_name, subsp_name, sequence,uniprot_ID,reviewed):
+        super().__init__(gene_name, gene_ID, sp_name, subsp_name, sequence)
+        self.prot_name=gene_name
+        self.prot_ID=gene_ID
+        self.uniprot_ID=uniprot_ID
+        self.reveiwed=reviewed
+        self.Hydrophobicity=self.get_Hydrophobicity(sequence)
+
+    def get_Hydrophobicity(self,sequence):
+        '''
+        method for find hydrophobicity using content of hydrophobic amino acids
+        input : sequence
+        output : percentage of hydrophobicity
+        '''
+        Hydrophobicity = ((sequence.count("A") + sequence.count("I") + sequence.count("L") + sequence.count(
+            "M") + sequence.count("F") + sequence.count("W") + sequence.count("Y") + sequence.count("V")) / len(
+            sequence)) * 100
+        return(Hydrophobicity)
+
+'''
+Author : Bhagya Hendalage
+Date : 31/12/2020
+create objects for each FASTA record create list of values call them in different locations
+'''
+from s13674_PR3_Q2 import *
+sequence=Sequence.fasta_Split("OSDREB_sequences.FASTA")
+seq_objects = []
+
+for key,value in sequence.items():
+    if Sequence.get_Seq_Type(value[1])=="DNA":
+        seq_objects.append(DNAseq(key,value[0][1],value[0][2],value[0][3],value[1]))
+    elif Sequence.get_Seq_Type(value[1]) == "mRNA":
+        seq_objects.append(mRNAseq(key,value[0][1], value[0][2], value[0][3],value[1]))
+    else:
+        seq_objects.append(Proteinseq(key,value[0][1],value[0][2],value[0][3],value[1],value[0][4],True))
+for objects in seq_objects:
+
+    if objects.seq_type == "DNA" and "DREB1A" in objects.gene_name:
+        print('i')
+        print("Gene ID: ",objects.gene_ID)
+        print("Sequence length: ", objects.seq_length)
+        print("Sequence type: ", objects.seq_type)
+        print("AT content: ", objects.AT_content,'%')
+        print()
+
+    if objects.seq_type == "DNA" and "DREB1B" in objects.gene_name:
+            print('ii')
+            new_seq = DNAseq.transcribe_Sequence(DNAseq, objects.sequence)
+            mRNA = mRNAseq(objects.gene_name, objects.gene_ID, objects.sp_name, objects.subsp_name, new_seq)
+            print("Sequence length: ", mRNA.seq_len)
+            print("Sequence type: ", mRNA.seq_type)
+            print("AT content: ", mRNA.AT_content,'%')
+            print("Sequence: ", mRNA.sequence)
+            print()
+
+            print('iii')
+            prot = mRNA.Translated_sequence
+            print("protein: ", prot)
+            print("length: ", len(prot))
+            print()
+
+    if objects.seq_type == "Amino acid" and "DREB2A_P" in objects.gene_name:
+            print('iv')
+            print("Uniprot ID: ", objects.uniprot_ID)
+            print("reviewed: ", "yes" if objects.reveiwed else "no")
+            print("Composition: ", objects.get_Character_Count(objects.sequence))
+            print("hydrophobicity: ", objects.Hydrophobicity,'%')
+            print()
+print('v')
+print(Sequence.seq_count)
